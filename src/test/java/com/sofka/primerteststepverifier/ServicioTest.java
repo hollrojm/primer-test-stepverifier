@@ -6,6 +6,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
+import reactor.test.publisher.TestPublisher;
 
 import java.time.Duration;
 
@@ -99,4 +100,25 @@ class ServicioTest {
                 .hasDropped(4)
                 .tookLessThan(Duration.ofMillis(1050));
       }
+
+    final TestPublisher<String> testPublisher = TestPublisher.create();
+    @Test
+    void testUpperCase() {
+        UppercaseConverter uppercaseConverter = new UppercaseConverter(testPublisher.flux());
+        StepVerifier.create(uppercaseConverter.getUpperCase())
+                .then(() -> testPublisher.emit("datos", "GeNeRaDoS", "Sofka"))
+                .expectNext("DATOS", "GENERADOS", "SOFKA")
+                .verifyComplete();
+    }
+
+    @Test
+    void testUpperCaseBad() {
+        UppercaseConverter uppercaseConverter = new UppercaseConverter(testPublisher.flux());
+        StepVerifier.create(uppercaseConverter.getUpperCase())
+                .then(() -> TestPublisher
+                        .createNoncompliant(TestPublisher.Violation.ALLOW_NULL)
+                        .emit("1", "2", null, "3"));
+    }
+
+
     }
